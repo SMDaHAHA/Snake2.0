@@ -20,25 +20,29 @@ public class KeyHandler implements KeyListener {
 
     @Override
     public void keyReleased(KeyEvent e) {
-        if (e.getKeyCode() == KeyEvent.VK_UP) upPressed = false;
-        if (e.getKeyCode() == KeyEvent.VK_RIGHT) rightPressed = false;
-        if (e.getKeyCode() == KeyEvent.VK_DOWN) downPressed = false;
-        if (e.getKeyCode() == KeyEvent.VK_LEFT) leftPressed = false;
     }
 
     public boolean isUpPressed() {
-        return upPressed;
+        boolean temp = upPressed;
+        upPressed = false;
+        return temp;
     }
 
     public boolean isRightPressed() {
-        return rightPressed;
+        boolean temp = rightPressed;
+        rightPressed = false;
+        return temp;
     }
 
     public boolean isDownPressed() {
-        return downPressed;
+        boolean temp = downPressed;
+        downPressed = false;
+        return temp;
     }
 
     public boolean isLeftPressed() {
-        return leftPressed;
+        boolean temp = leftPressed;
+        leftPressed = false;
+        return temp;
     }
 }

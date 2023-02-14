@@ -7,6 +7,7 @@ import javax.imageio.ImageIO;
 import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.Objects;
 
@@ -17,10 +18,12 @@ public class Snake {
     private final LinkedList<Point> body = new LinkedList<>();
     private Direction direction = Direction.UP;
     private final int startLength;
+    Food food;
 
-    public Snake(int sl) throws IOException {
+    public Snake(int sl) {
         startLength = sl;
-        BufferedImage tileset = new BufferedImage(512, 512, BufferedImage.TYPE_INT_ARGB);
+
+        BufferedImage tileset = new BufferedImage(1, 1, BufferedImage.TYPE_INT_ARGB);
         try {
             tileset = ImageIO.read(Objects.requireNonNull(getClass().getClassLoader().getResource("images/tileset.png")));
         } catch (Exception e) {
@@ -43,7 +46,7 @@ public class Snake {
         }
     }
 
-    public void update(KeyHandler keyH) {
+    public void update(KeyHandler keyH, Food food) {
         // UP
         if (keyH.isUpPressed()) {
             if (direction != Direction.DOWN) {
@@ -54,7 +57,6 @@ public class Snake {
         if (keyH.isRightPressed()) {
             if (direction != Direction.LEFT) {
                 direction = Direction.RIGHT;
-                System.out.println("direction is set to right");
             }
         }
         // DOWN
@@ -69,25 +71,26 @@ public class Snake {
                 direction = Direction.LEFT;
             }
         }
-        Point curHead = new Point();
-        Point newHead = new Point();
-        curHead.setLocation(body.peekFirst());
-        switch (direction) {
-            case UP -> newHead.setLocation(curHead.x, curHead.y - 1);
-            case RIGHT -> newHead.setLocation(curHead.x + 1, curHead.y);
-            case DOWN -> newHead.setLocation(curHead.x, curHead.y + 1);
-            case LEFT -> newHead.setLocation(curHead.x - 1, curHead.y);
+        Point nextPoint = getNextPoint();
+        // либо хаваем яблоко либо отрезаем хвост
+        if (nextPoint.equals(food.pos)) {
+            food.eat();
+        } else {
+            body.removeLast();
         }
-        body.removeLast();
-        body.addFirst(newHead);
+        body.addFirst(nextPoint);
     }
 
     public void draw(Graphics2D g2) {
-        body.forEach(bodyNode -> g2.drawImage(getImage(bodyNode), bodyNode.x * tileSize, bodyNode.y * tileSize, tileSize, tileSize, null));
+        body.forEach(bodyNode -> g2.drawImage(getImage(bodyNode), bodyNode.x * tileSize, (bodyNode.y * tileSize) + 100, tileSize, tileSize, null));
     }
 
     public int getScore() {
         return body.size() - startLength;
+    }
+
+    public ArrayList<Point> getBody() {
+        return new ArrayList<>(body);
     }
 
     private Image getImage(Point bodyNode) {
@@ -98,5 +101,42 @@ public class Snake {
         } else {
             return images[1];
         }
+    }
+
+    private Point getNextPoint() {
+        Point curHead = new Point();
+        curHead.setLocation(body.peekFirst());
+        Point nextHead = new Point();
+        switch (direction) {
+            case UP -> {
+                if (curHead.y == 0) {
+                    nextHead.setLocation(curHead.x, 19);
+                } else {
+                    nextHead.setLocation(curHead.x, curHead.y - 1);
+                }
+            }
+            case RIGHT -> {
+                if (curHead.x == 19) {
+                    nextHead.setLocation(0, curHead.y);
+                } else {
+                    nextHead.setLocation(curHead.x + 1, curHead.y);
+                }
+            }
+            case DOWN -> {
+                if (curHead.y == 19) {
+                    nextHead.setLocation(curHead.x, 0);
+                } else {
+                    nextHead.setLocation(curHead.x, curHead.y + 1);
+                }
+            }
+            case LEFT -> {
+                if (curHead.x == 0) {
+                    nextHead.setLocation(19, curHead.y);
+                } else {
+                    nextHead.setLocation(curHead.x - 1, curHead.y);
+                }
+            }
+        }
+        return nextHead;
     }
 }

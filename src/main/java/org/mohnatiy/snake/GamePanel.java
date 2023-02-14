@@ -1,31 +1,31 @@
 package org.mohnatiy.snake;
 
+import org.mohnatiy.snake.entities.Food;
 import org.mohnatiy.snake.entities.Snake;
 import org.mohnatiy.snake.input_handlers.KeyHandler;
 
 import javax.swing.*;
 import java.awt.*;
-import java.io.IOException;
+import java.util.concurrent.TimeUnit;
 
 public class GamePanel extends JPanel implements Runnable {
     public static final int screenWidth = 800, screenHeight = 900;
     public static final int FPS = 6;
     public static final int tileSize = 40;
     public static int snakeStartLength = 4;
+    public static GameState gameState = GameState.PLAY;
     KeyHandler keyH = new KeyHandler();
     Thread gameThread;
     Snake snake;
+    Food food;
 
     public GamePanel() {
         this.setPreferredSize(new Dimension(screenWidth, screenHeight));
         this.setDoubleBuffered(true);
         this.setFocusable(true);
+        this.addKeyListener(keyH);
 
-        try {
-            snake = new Snake(snakeStartLength);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+        initGame();
     }
 
     public void startGameThread() {
@@ -56,7 +56,13 @@ public class GamePanel extends JPanel implements Runnable {
     }
 
     public void update() {
-        snake.update(keyH);
+        switch (gameState) {
+            case PLAY -> {
+                snake.update(keyH, food);
+                food.update(snake);
+            }
+            case GAMEOVER -> System.out.println("suck some dick");
+        }
     }
 
     @Override
@@ -64,11 +70,26 @@ public class GamePanel extends JPanel implements Runnable {
         super.paintComponent(g);
         Graphics2D g2 = (Graphics2D) g;
 
-        snake.draw(g2);
-
-        g2.setFont(new Font("Times new Roman", Font.BOLD, 50));
-        g2.drawString(String.format("СЧЁТ: %d", snake.getScore()), 50, 50);
+        switch (gameState) {
+            case PLAY -> {
+                snake.draw(g2);
+                food.draw(g2);
+                g2.setFont(new Font("Times new Roman", Font.BOLD, 50));
+                g2.drawString(String.format("СЧЁТ: %d", snake.getScore()), 50, 50);
+            }
+            case GAMEOVER -> {
+                snake.draw(g2);
+                g2.setColor(Color.red);
+                g2.setFont(new Font("Times new Roman", Font.BOLD, 50));
+                g2.drawString("Игра закончилась", screenWidth >> 1, screenHeight >> 1);
+            }
+        }
 
         g2.dispose();
+    }
+
+    public void initGame() {
+        snake = new Snake(snakeStartLength);
+        food = new Food();
     }
 }
