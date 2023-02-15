@@ -9,42 +9,49 @@ import java.util.Random;
 
 import static org.mohnatiy.snake.GamePanel.*;
 
-public class Food {
+public class Boost {
 
     Random random = new Random();
     Point pos = new Point();
     Image image;
-    private boolean isEaten = false;
+    private boolean isReadyToEat = true;
+    private long secondsAfterEated = 0;
 
-    public Food() {
+    public Boost() {
         BufferedImage temp = new BufferedImage(1, 1, BufferedImage.TYPE_INT_ARGB);
         try {
-            temp = ImageIO.read(new File("src/main/resources/images/tileset.png"));
+            temp = ImageIO.read(new File("src/main/resources/images/energyMonster.png"));
         } catch (IOException e) {
             e.printStackTrace();
         }
+        image = temp;
 
-        int tileSize = 75;
-        image = temp.getSubimage((tileSize * 2), (tileSize * 5), tileSize, tileSize);
         pos.setLocation(random.nextInt(0, 20), random.nextInt(0, 20));
     }
 
-    public void update(Snake snake) {
-        if (isEaten) {
+    public void update(Snake snake, Food food, long secondsPassed) {
+        if (isReadyToEat) {
             do {
                 pos.setLocation(
                         random.nextInt(0, 20),
                         random.nextInt(0, 20));
-                isEaten = false;
-            } while (snake.getBody().stream().anyMatch(bodyNode -> bodyNode.pos.equals(pos)));
+                isReadyToEat = false;
+                secondsAfterEated = secondsPassed;
+            } while (snake.getBody().stream().anyMatch(bodyNode -> bodyNode.pos.equals(pos)) || food.pos.equals(pos));
+        } else {
+            pos.setLocation(-1, -1);
+            if (secondsPassed - 5 > secondsAfterEated) {
+                isReadyToEat = true;
+                secondsAfterEated = secondsPassed;
+            }
         }
-    }
-
-    public void eat() {
-        isEaten = true;
     }
 
     public void draw(Graphics2D g2) {
         g2.drawImage(image, (pos.x * tileSize), (pos.y * tileSize) + 100, tileSize, tileSize, null);
+    }
+
+    public void eat() {
+        isReadyToEat = true;
     }
 }

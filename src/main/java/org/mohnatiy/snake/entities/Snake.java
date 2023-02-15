@@ -6,7 +6,6 @@ import org.mohnatiy.snake.input_handlers.KeyHandler;
 import javax.imageio.ImageIO;
 import java.awt.*;
 import java.awt.image.BufferedImage;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.Objects;
@@ -14,39 +13,57 @@ import java.util.Objects;
 import static org.mohnatiy.snake.GamePanel.*;
 
 public class Snake {
-    private final Image[] images = new Image[4];
-    private final LinkedList<Point> body = new LinkedList<>();
+    private final Image[] imagesUp = new Image[4];
+    private final Image[] imagesDown = new Image[4];
+    private final Image[] imagesRight = new Image[4];
+    private final Image[] imagesLeft = new Image[4];
+    private final Image[] imagesCurved = new Image[4];
+    private final LinkedList<SnakeNode> body = new LinkedList<>();
     private Direction direction = Direction.UP;
     private final int startLength;
-    Food food;
+    private boolean dead;
 
     public Snake(int sl) {
         startLength = sl;
 
-        BufferedImage tileset = new BufferedImage(1, 1, BufferedImage.TYPE_INT_ARGB);
+        BufferedImage tileSet = new BufferedImage(1, 1, BufferedImage.TYPE_INT_ARGB);
         try {
-            tileset = ImageIO.read(Objects.requireNonNull(getClass().getClassLoader().getResource("images/tileset.png")));
+            tileSet = ImageIO.read(Objects.requireNonNull(getClass().getClassLoader().getResource("images/tileset.png")));
         } catch (Exception e) {
             e.printStackTrace();
         }
-        int tileSize = 72;
-        // head
-        images[0] = tileset.getSubimage(0, 0, tileSize, tileSize);
-        // straight body
-        images[1] = tileset.getSubimage(0, tileSize, tileSize, tileSize);
-        // curved body
-        images[2] = tileset.getSubimage(0, tileSize * 3, tileSize, tileSize);
-        // tail
-        images[3] = tileset.getSubimage(0, tileSize * 2, tileSize, tileSize);
+        int tileSize = 75;
+        imagesUp[0] = tileSet.getSubimage(0, 0, tileSize, tileSize);
+        imagesUp[1] = tileSet.getSubimage(0, tileSize, tileSize, tileSize);
+        imagesUp[2] = tileSet.getSubimage(0, (tileSize * 2), tileSize, tileSize);
+
+        imagesDown[0] = tileSet.getSubimage(tileSize, (tileSize * 4), tileSize, tileSize);
+        imagesDown[1] = tileSet.getSubimage(tileSize, (tileSize * 3), tileSize, tileSize);
+        imagesDown[2] = tileSet.getSubimage(tileSize, (tileSize * 2), tileSize, tileSize);
+
+        imagesRight[0] = tileSet.getSubimage((tileSize * 5), 0, tileSize, tileSize);
+        imagesRight[1] = tileSet.getSubimage((tileSize * 4), 0, tileSize, tileSize);
+        imagesRight[2] = tileSet.getSubimage((tileSize * 3), 0, tileSize, tileSize);
+
+
+        imagesLeft[0] = tileSet.getSubimage(tileSize, tileSize, tileSize, tileSize);
+        imagesLeft[1] = tileSet.getSubimage((tileSize * 2), tileSize, tileSize, tileSize);
+        imagesLeft[2] = tileSet.getSubimage((tileSize * 3), tileSize, tileSize, tileSize);
+
+        imagesCurved[0] = tileSet.getSubimage((tileSize * 4), tileSize, tileSize, tileSize);
+        imagesCurved[1] = tileSet.getSubimage(0, (tileSize * 4), tileSize, tileSize);
+        imagesCurved[2] = tileSet.getSubimage(0, (tileSize * 3), tileSize, tileSize);
+        imagesCurved[3] = tileSet.getSubimage((tileSize * 2), 0, tileSize, tileSize);
+
         int x = 10;
-        int y = 7;
+        int y = 2;
         for (int i = 0; i < startLength; i++) {
-            body.add(new Point(x, y));
+            body.add(new SnakeNode(direction, new Point(x, y)));
             y++;
         }
     }
 
-    public void update(KeyHandler keyH, Food food) {
+    public void update(KeyHandler keyH, Food food, Boost boost) {
         // UP
         if (keyH.isUpPressed()) {
             if (direction != Direction.DOWN) {
@@ -71,41 +88,135 @@ public class Snake {
                 direction = Direction.LEFT;
             }
         }
+        body.element().onLeaving = direction;
         Point nextPoint = getNextPoint();
-        // либо хаваем яблоко либо отрезаем хвост
+        if (nextPoint.equals(boost.pos)) {
+            boost.eat();
+        }
         if (nextPoint.equals(food.pos)) {
+            // пытаемся захавать яблоко
             food.eat();
+        } else if (nextPoint.equals(boost.pos)) {
+            // пытаемся захавать энергос
+            boost.eat();
         } else {
+            // ежели похавать всё-таки не удалось — отрезаем хвост
             body.removeLast();
         }
-        body.addFirst(nextPoint);
+        if (body.stream().anyMatch(bodyNode -> bodyNode.pos.equals(nextPoint))) {
+            dead = true;
+        }
+        body.addFirst(new SnakeNode(direction, nextPoint));
     }
 
     public void draw(Graphics2D g2) {
-        body.forEach(bodyNode -> g2.drawImage(getImage(bodyNode), bodyNode.x * tileSize, (bodyNode.y * tileSize) + 100, tileSize, tileSize, null));
+        body.forEach(bodyNode -> g2.drawImage(getImage(bodyNode), bodyNode.pos.getLocation().x * tileSize, (bodyNode.pos.getLocation().y * tileSize) + 100, tileSize, tileSize, null));
     }
 
     public int getScore() {
         return body.size() - startLength;
     }
 
-    public ArrayList<Point> getBody() {
-        return new ArrayList<>(body);
+    private Image getImage(SnakeNode node) {
+        if (body.indexOf(node) == 0) {
+            // бошки дымятся
+            switch (node.onEntering) {
+                case UP -> {
+                    return imagesUp[0];
+                }
+                case RIGHT -> {
+                    return imagesRight[0];
+                }
+                case DOWN -> {
+                    return imagesDown[0];
+                }
+                case LEFT -> {
+                    return imagesLeft[0];
+                }
+            }
+        } else if (body.indexOf(node) == body.size() - 1) {
+            // хвостов не оставляем
+            switch (node.onLeaving) {
+                case UP -> {
+                    return imagesUp[2];
+                }
+                case RIGHT -> {
+                    return imagesRight[2];
+                }
+                case DOWN -> {
+                    return imagesDown[2];
+                }
+                case LEFT -> {
+                    return imagesLeft[2];
+                }
+            }
+        } else {
+            // дороги...
+            switch (node.onEntering) {
+                case UP -> {
+                    switch (node.onLeaving) {
+                        case UP -> {
+                            return imagesUp[1];
+                        }
+                        case RIGHT -> {
+                            return imagesCurved[1];
+                        }
+                        case LEFT -> {
+                            return imagesCurved[2];
+                        }
+                    }
+                }
+                case RIGHT -> {
+                    switch (node.onLeaving) {
+                        case UP -> {
+                            return imagesCurved[3];
+                        }
+                        case RIGHT -> {
+                            return imagesRight[1];
+                        }
+                        case DOWN -> {
+                            return imagesCurved[2];
+                        }
+                    }
+                }
+                case DOWN -> {
+                    switch (node.onLeaving) {
+                        case RIGHT -> {
+                            return imagesCurved[0];
+                        }
+                        case DOWN -> {
+                            return imagesDown[1];
+                        }
+                        case LEFT -> {
+                            return imagesCurved[3];
+                        }
+                    }
+                }
+                case LEFT -> {
+                    switch (node.onLeaving) {
+                        case UP -> {
+                            return imagesCurved[0];
+                        }
+                        case DOWN -> {
+                            return imagesCurved[1];
+                        }
+                        case LEFT -> {
+                            return imagesLeft[1];
+                        }
+                    }
+                }
+            }
+        }
+        return null;
     }
 
-    private Image getImage(Point bodyNode) {
-        if (body.indexOf(bodyNode) == 0) {
-            return images[0];
-        } else if (body.indexOf(bodyNode) == body.size() - 1) {
-            return images[3];
-        } else {
-            return images[1];
-        }
+    public ArrayList<SnakeNode> getBody() {
+        return new ArrayList<>(body);
     }
 
     private Point getNextPoint() {
         Point curHead = new Point();
-        curHead.setLocation(body.peekFirst());
+        curHead.setLocation(body.element().pos);
         Point nextHead = new Point();
         switch (direction) {
             case UP -> {
@@ -138,5 +249,9 @@ public class Snake {
             }
         }
         return nextHead;
+    }
+
+    public boolean isDead() {
+        return dead;
     }
 }
