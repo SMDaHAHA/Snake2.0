@@ -102,7 +102,7 @@ public class GamePanel extends JPanel implements Runnable {
                 g2.setColor(Color.red);
                 g2.setFont(new Font("Times new Roman", Font.BOLD, 50));
                 g2.drawString("Игра закончилась", screenWidth / 3, 50);
-                g2.drawString(String.format("СЧЁТ: %d", snake.getScore()), 35, 50);
+                g2.drawString(String.format("СЧЁТ: %d", snake.getScore()), 40, 50);
             }
         }
 
