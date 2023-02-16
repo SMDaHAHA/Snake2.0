@@ -39,8 +39,7 @@ public class Boost {
                 secondsAfterEated = secondsPassed;
             } while (snake.getBody().stream().anyMatch(bodyNode -> bodyNode.pos.equals(pos)) || food.pos.equals(pos));
         } else {
-            pos.setLocation(-1, -1);
-            if (secondsPassed - 5 > secondsAfterEated) {
+            if (secondsPassed - 3 > secondsAfterEated) {
                 isReadyToEat = true;
                 secondsAfterEated = secondsPassed;
             }

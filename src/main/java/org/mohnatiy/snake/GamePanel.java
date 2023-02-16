@@ -13,7 +13,7 @@ import static org.mohnatiy.snake.Main.bg;
 
 public class GamePanel extends JPanel implements Runnable {
     public static final int screenWidth = 800, screenHeight = 900;
-    public static int FPS = 5;
+    public static int FPS = 10;
     public static final int tileSize = 40;
     public static int snakeStartLength = 4;
     public static long secondsPassed = 0;
@@ -102,7 +102,7 @@ public class GamePanel extends JPanel implements Runnable {
                 g2.setColor(Color.red);
                 g2.setFont(new Font("Times new Roman", Font.BOLD, 50));
                 g2.drawString("Игра закончилась", screenWidth / 3, 50);
-                g2.drawString(String.format("СЧЁТ: %d", snake.getScore()), 50, 50);
+                g2.drawString(String.format("СЧЁТ: %d", snake.getScore()), 35, 50);
             }
         }
 
